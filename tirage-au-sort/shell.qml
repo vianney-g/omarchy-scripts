@@ -27,7 +27,7 @@ ShellRoot {
     property bool rolling: false      // animation de défilement en cours
     property int drawCount: 0
     property int rollStep: 0
-    readonly property int rollSteps: 22
+    readonly property int rollSteps: 14   // ~0,9 s au total (voir rollTimer)
 
     property date now: new Date()
 
@@ -99,18 +99,19 @@ ShellRoot {
         if (rolling || !currentClass || currentClass.students.length === 0) return
         rollStep = 0
         rolling = true
-        rollTimer.interval = 30
+        rollTimer.interval = 20
         rollTimer.start()
     }
 
     // Défilement qui ralentit progressivement avant de s'arrêter sur le nom tiré.
+    // Durée totale : 20 + Σ(20 + 0,75·k²) pour k = 1..13 ≈ 0,9 s.
     Timer {
         id: rollTimer
         repeat: true
         onTriggered: {
             root.shown = root.randomStudent()
             root.rollStep++
-            interval = 30 + root.rollStep * root.rollStep * 0.8
+            interval = 20 + root.rollStep * root.rollStep * 0.75
             if (root.rollStep >= root.rollSteps) {
                 stop()
                 root.rolling = false
