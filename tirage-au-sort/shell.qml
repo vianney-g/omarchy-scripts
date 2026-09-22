@@ -310,7 +310,7 @@ ShellRoot {
                     font.pixelSize: win.u * 2.5
                     color: root.green
                     opacity: 0.5
-                    text: "[Entrée] tirer   [C] changer de classe   [Q] quitter"
+                    text: "[Entrée] ou [Espace] tirer   [C] changer de classe   [Q] quitter"
                 }
             }
 
