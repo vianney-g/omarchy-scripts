@@ -85,3 +85,7 @@ o.window("^org\\.tirage-au-sort$", {
 	size = { 1400, 700 },
 })
 ```
+
+## Licence
+
+[MIT](LICENSE)
