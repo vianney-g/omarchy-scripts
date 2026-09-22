@@ -79,11 +79,6 @@ Puis dans `~/.config/hypr/bindings.lua` :
 ```lua
 o.bind("SUPER + ALT + T", "Tirage au sort",
 	'omarchy-launch-or-focus org.tirage-au-sort "uwsm-app -- qs -n -c tirage-au-sort"')
-o.window("^org\\.tirage-au-sort$", {
-	float = true,
-	center = true,
-	size = { 1400, 700 },
-})
 ```
 
 ## Licence
