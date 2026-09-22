@@ -39,10 +39,13 @@ police JetBrainsMono Nerd Font — tous présents sur une installation Omarchy s
 
 ## tirage-au-sort
 
-Tirage au sort d'un élève, plein écran en [Quickshell](https://quickshell.org/),
-même style terminal que le minuteur.
+Tirage au sort d'un élève en [Quickshell](https://quickshell.org/), même style
+terminal que le minuteur.
 
-- Choix de la classe dans une liste, puis tirage avec une animation de défilement.
+- Choix de la classe dans une liste, puis tirage avec une animation de défilement (< 1 s).
+- Fenêtre Hyprland normale, pensée pour rester ouverte tout le cours sur la même
+  classe : le raccourci la lance, ou lui redonne le focus si elle est déjà ouverte ;
+  `SUPER + F` bascule plein écran / fenêtré.
 - Les classes sont de simples fichiers texte, **hors du repo** : aucun nom
   d'élève n'est versionné.
 
@@ -52,7 +55,7 @@ même style terminal que le minuteur.
 | `1` … `9` | choisir directement la classe n° |
 | `Entrée` / `Espace` | tirer un élève |
 | `C` | changer de classe (relit les fichiers) |
-| `Échap` / `Q` | quitter |
+| `Q` | quitter (Échap ne quitte pas, pour ne pas perdre la classe par réflexe) |
 
 ### Configuration des classes
 
@@ -71,6 +74,14 @@ cp tirage-au-sort/exemple/*.txt ~/.config/tirage-au-sort/   # puis éditer
 ln -s "$PWD/tirage-au-sort" ~/.config/quickshell/tirage-au-sort
 ```
 
+Puis dans `~/.config/hypr/bindings.lua` :
+
 ```lua
-o.bind("SUPER + ALT + T", "Tirage au sort", "qs -n -c tirage-au-sort")
+o.bind("SUPER + ALT + T", "Tirage au sort",
+	'omarchy-launch-or-focus org.tirage-au-sort "uwsm-app -- qs -n -c tirage-au-sort"')
+o.window("^org\\.tirage-au-sort$", {
+	float = true,
+	center = true,
+	size = { 1400, 700 },
+})
 ```
