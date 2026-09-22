@@ -1,0 +1,348 @@
+// Tirage au sort d'un élève, plein écran pour vidéoprojecteur — style terminal à phosphore.
+// Lancement : qs -n -c tirage-au-sort   (raccourci SUPER + ALT + T)
+//
+// Les classes sont lues dans ~/.config/tirage-au-sort/ : un fichier <classe>.txt
+// par classe, un élève par ligne (lignes vides et lignes commençant par # ignorées).
+//
+//   Choix de la classe : ↑/↓ (ou j/k) puis Entrée, ou directement le chiffre
+//   Tirage             : Entrée/Espace = tirer un élève, C = changer de classe
+//   Partout            : Échap ou Q = quitter
+import QtQuick
+import QtQuick.Effects
+import Quickshell
+import Quickshell.Io
+import Quickshell.Wayland
+import Quickshell.Hyprland
+
+ShellRoot {
+    id: root
+
+    // "loading" -> "select" -> "draw"
+    property string mode: "loading"
+    property var classes: []          // [{ name, students: [...] }]
+    property int selected: 0
+    property var currentClass: null
+
+    property string shown: ""         // nom affiché
+    property bool rolling: false      // animation de défilement en cours
+    property int drawCount: 0
+    property int rollStep: 0
+    readonly property int rollSteps: 22
+
+    property date now: new Date()
+
+    readonly property color green: "#33ff66"
+    readonly property color amber: "#ffb000"
+    readonly property color red: "#ff3344"
+    readonly property string mono: "JetBrainsMono Nerd Font"
+
+    readonly property string configDir:
+        (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/tirage-au-sort"
+    readonly property string configDirShort: configDir.replace(Quickshell.env("HOME"), "~")
+    readonly property bool emptyClass:
+        mode === "draw" && currentClass !== null && currentClass.students.length === 0
+
+    function plural(n) { return n + (n > 1 ? " élèves" : " élève") }
+
+    // --- Lecture des classes ---
+    // Chaque fichier est précédé d'une ligne « \x1f<classe> » pour les séparer.
+    Process {
+        id: loader
+        command: ["sh", "-c",
+            'cd "$1" 2>/dev/null || exit 0; for f in *.txt; do [ -f "$f" ] || continue; printf "\\037%s\\n" "${f%.txt}"; cat "$f"; echo; done',
+            "sh", root.configDir]
+        stdout: StdioCollector {
+            onStreamFinished: root.parseClasses(this.text)
+        }
+    }
+
+    function reload() {
+        mode = "loading"
+        loader.running = true
+    }
+
+    function parseClasses(text) {
+        const result = []
+        for (const raw of text.split("\n")) {
+            if (raw.startsWith("\x1f")) {
+                result.push({ name: raw.slice(1), students: [] })
+                continue
+            }
+            const line = raw.trim()
+            if (line === "" || line.startsWith("#") || result.length === 0) continue
+            result[result.length - 1].students.push(line)
+        }
+        result.sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }))
+        classes = result
+        selected = Math.min(selected, Math.max(0, result.length - 1))
+        mode = "select"
+    }
+
+    function chooseClass(index) {
+        if (index < 0 || index >= classes.length) return
+        selected = index
+        currentClass = classes[index]
+        shown = ""
+        drawCount = 0
+        mode = "draw"
+    }
+
+    function randomStudent() {
+        const s = currentClass.students
+        if (s.length < 2) return s[0]
+        let pick
+        do { pick = s[Math.floor(Math.random() * s.length)] } while (pick === shown)
+        return pick
+    }
+
+    function draw() {
+        if (rolling || !currentClass || currentClass.students.length === 0) return
+        rollStep = 0
+        rolling = true
+        rollTimer.interval = 30
+        rollTimer.start()
+    }
+
+    // Défilement qui ralentit progressivement avant de s'arrêter sur le nom tiré.
+    Timer {
+        id: rollTimer
+        repeat: true
+        onTriggered: {
+            root.shown = root.randomStudent()
+            root.rollStep++
+            interval = 30 + root.rollStep * root.rollStep * 0.8
+            if (root.rollStep >= root.rollSteps) {
+                stop()
+                root.rolling = false
+                root.drawCount++
+            }
+        }
+    }
+
+    Timer {
+        interval: 1000
+        repeat: true
+        running: true
+        onTriggered: root.now = new Date()
+    }
+
+    Component.onCompleted: reload()
+
+    // Une fenêtre plein écran par moniteur (écran + vidéoprojecteur).
+    Variants {
+        model: Quickshell.screens
+
+        PanelWindow {
+            id: win
+            required property var modelData
+            screen: modelData
+
+            readonly property bool primary:
+                Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name === modelData.name
+                                        : modelData === Quickshell.screens[0]
+            readonly property real u: height / 100   // unité : 1 % de la hauteur
+
+            anchors { top: true; bottom: true; left: true; right: true }
+            exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.namespace: "tirage-au-sort"
+            WlrLayershell.keyboardFocus: primary ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+
+            color: "#020803"
+
+            Item {
+                id: keyHandler
+                anchors.fill: parent
+                focus: true
+                Component.onCompleted: forceActiveFocus()
+
+                Keys.onPressed: event => {
+                    const k = event.key
+                    if (k === Qt.Key_Escape || k === Qt.Key_Q) Qt.quit()
+                    else if (root.mode === "select") {
+                        if (k === Qt.Key_Down || k === Qt.Key_J)
+                            root.selected = Math.min(root.selected + 1, root.classes.length - 1)
+                        else if (k === Qt.Key_Up || k === Qt.Key_K)
+                            root.selected = Math.max(root.selected - 1, 0)
+                        else if (k === Qt.Key_Return || k === Qt.Key_Enter || k === Qt.Key_Space)
+                            root.chooseClass(root.selected)
+                        else if (k >= Qt.Key_1 && k <= Qt.Key_9)
+                            root.chooseClass(k - Qt.Key_1)
+                        else return
+                    }
+                    else if (root.mode === "draw") {
+                        if (k === Qt.Key_Return || k === Qt.Key_Enter || k === Qt.Key_Space) root.draw()
+                        else if (k === Qt.Key_C) root.reload()   // relit les fichiers au passage
+                        else return
+                    }
+                    else return
+                    event.accepted = true
+                }
+
+                // ---- Contenu (avec halo lumineux façon phosphore) ----
+                Item {
+                    anchors.fill: parent
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: root.emptyClass ? root.red : root.green
+                        shadowBlur: 1.0
+                        shadowOpacity: 0.9
+                        shadowHorizontalOffset: 0
+                        shadowVerticalOffset: 0
+                        blurMax: 48
+                    }
+
+                    // -- Barre d'état en haut --
+                    Text {
+                        anchors { top: parent.top; left: parent.left; margins: win.u * 3 }
+                        font.family: root.mono
+                        font.pixelSize: win.u * 3
+                        color: root.green
+                        opacity: 0.7
+                        text: "tirage@salle-info:~ "
+                            + (root.mode === "draw" ? "[ " + root.currentClass.name + " · "
+                                                      + root.plural(root.currentClass.students.length) + " ]"
+                                                    : "[ READY ]")
+                    }
+                    Text {
+                        anchors { top: parent.top; right: parent.right; margins: win.u * 3 }
+                        font.family: root.mono
+                        font.pixelSize: win.u * 3
+                        color: root.green
+                        opacity: 0.7
+                        text: Qt.formatTime(root.now, "HH:mm:ss")
+                    }
+
+                    // -- Choix de la classe --
+                    Column {
+                        visible: root.mode === "select"
+                        anchors.centerIn: parent
+                        spacing: win.u * 2.5
+
+                        Text {
+                            font.family: root.mono
+                            font.pixelSize: win.u * 3.5
+                            color: root.green
+                            opacity: 0.6
+                            text: root.classes.length > 0 ? "# Choisir une classe :"
+                                                          : "# Aucune classe trouvée dans " + root.configDirShort
+                        }
+                        Text {
+                            font.family: root.mono
+                            font.pixelSize: win.u * 8
+                            color: root.green
+                            text: "$ ls classes/"
+                        }
+
+                        Repeater {
+                            model: root.classes
+                            Text {
+                                required property var modelData
+                                required property int index
+                                readonly property bool current: index === root.selected
+                                font.family: root.mono
+                                font.pixelSize: win.u * 6
+                                font.bold: current
+                                color: modelData.students.length === 0 ? root.red : root.green
+                                opacity: current ? 1 : 0.5
+                                text: (current ? "> " : "  ") + "[" + (index + 1) + "] "
+                                    + modelData.name.padEnd(6, " ")
+                                    + (modelData.students.length === 0 ? "(vide)"
+                                       : "(" + root.plural(modelData.students.length) + ")")
+                            }
+                        }
+
+                        Text {
+                            font.family: root.mono
+                            font.pixelSize: win.u * 2.5
+                            color: root.green
+                            opacity: 0.5
+                            text: root.classes.length > 0
+                                  ? "[↑↓] naviguer   [Entrée] ou [1-9] choisir   [Échap] quitter"
+                                  : "Créez un fichier <classe>.txt par classe, un élève par ligne."
+                        }
+                    }
+
+                    // -- Tirage --
+                    Text {
+                        visible: root.mode === "draw"
+                        anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: win.u * 16 }
+                        font.family: root.mono
+                        font.pixelSize: win.u * 4
+                        color: root.green
+                        opacity: 0.6
+                        text: "$ shuf -n1 " + (root.currentClass ? root.currentClass.name : "") + ".txt"
+                    }
+
+                    Text {
+                        visible: root.mode === "draw"
+                        anchors.fill: parent
+                        anchors.topMargin: win.u * 24
+                        anchors.bottomMargin: win.u * 22
+                        anchors.leftMargin: win.width * 0.04
+                        anchors.rightMargin: win.width * 0.04
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        wrapMode: Text.WordWrap
+                        font.family: root.mono
+                        font.bold: !root.rolling
+                        font.pixelSize: win.u * 22        // taille maximale, réduite si le nom est long
+                        fontSizeMode: Text.Fit
+                        minimumPixelSize: 10
+                        color: root.emptyClass ? root.red
+                             : root.rolling ? root.amber : root.green
+                        opacity: root.rolling ? 0.7 : 1
+                        text: root.emptyClass
+                              ? "classe vide"
+                              : root.shown !== "" ? root.shown : "_"
+                    }
+
+                    Text {
+                        visible: root.mode === "draw"
+                        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: win.u * 12 }
+                        font.family: root.mono
+                        font.pixelSize: win.u * 3.5
+                        color: root.green
+                        opacity: 0.6
+                        text: root.rolling ? "# random.choice() en cours…"
+                            : root.drawCount > 0 ? "# tirage n°" + root.drawCount
+                            : root.emptyClass
+                              ? "# ajoutez des noms dans " + root.configDirShort + "/" + root.currentClass.name + ".txt"
+                            : "# prêt"
+                    }
+
+                    Text {
+                        visible: root.mode === "draw"
+                        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: win.u * 5 }
+                        font.family: root.mono
+                        font.pixelSize: win.u * 2.5
+                        color: root.green
+                        opacity: 0.5
+                        text: "[Entrée] tirer   [C] changer de classe   [Échap] quitter"
+                    }
+                }
+
+                // ---- Lignes de balayage CRT (par-dessus, sans halo) ----
+                Column {
+                    anchors.fill: parent
+                    Repeater {
+                        model: Math.ceil(win.height / 4)
+                        Item {
+                            width: win.width
+                            height: 4
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                width: parent.width
+                                height: 1
+                                color: "black"
+                                opacity: 0.35
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

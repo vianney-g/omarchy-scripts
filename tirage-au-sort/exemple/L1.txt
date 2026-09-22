@@ -1,0 +1,6 @@
+# Classe L1 : un élève par ligne (les lignes commençant par # sont ignorées)
+Ada Lovelace
+Alan Turing
+Grace Hopper
+Linus Torvalds
+Margaret Hamilton

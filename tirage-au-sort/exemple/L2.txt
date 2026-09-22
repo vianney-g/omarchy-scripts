@@ -1,0 +1,5 @@
+# Classe L2
+Dennis Ritchie
+Ken Thompson
+Barbara Liskov
+Donald Knuth

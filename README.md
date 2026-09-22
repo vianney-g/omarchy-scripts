@@ -36,3 +36,41 @@ o.bind("SUPER + ALT + M", "Minuteur", "qs -n -c minuteur")
 
 Dépendances : `quickshell`, `pipewire` (`pw-play`), `sound-theme-freedesktop`,
 police JetBrainsMono Nerd Font — tous présents sur une installation Omarchy standard.
+
+## tirage-au-sort
+
+Tirage au sort d'un élève, plein écran en [Quickshell](https://quickshell.org/),
+même style terminal que le minuteur.
+
+- Choix de la classe dans une liste, puis tirage avec une animation de défilement.
+- Les classes sont de simples fichiers texte, **hors du repo** : aucun nom
+  d'élève n'est versionné.
+
+| Touche | Action |
+|--------|--------|
+| `↑` `↓` (ou `j` `k`), `Entrée` | choisir la classe |
+| `1` … `9` | choisir directement la classe n° |
+| `Entrée` / `Espace` | tirer un élève |
+| `C` | changer de classe (relit les fichiers) |
+| `Échap` / `Q` | quitter |
+
+### Configuration des classes
+
+Un fichier `<classe>.txt` par classe dans `~/.config/tirage-au-sort/`, un élève
+par ligne. Les lignes vides et celles qui commencent par `#` sont ignorées. Le
+nom du fichier donne le nom de la classe (`L1.txt` → « L1 »).
+
+```bash
+mkdir -p ~/.config/tirage-au-sort
+cp tirage-au-sort/exemple/*.txt ~/.config/tirage-au-sort/   # puis éditer
+```
+
+### Installation
+
+```bash
+ln -s "$PWD/tirage-au-sort" ~/.config/quickshell/tirage-au-sort
+```
+
+```lua
+o.bind("SUPER + ALT + T", "Tirage au sort", "qs -n -c tirage-au-sort")
+```
