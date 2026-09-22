@@ -43,6 +43,10 @@ Tirage au sort d'un élève en [Quickshell](https://quickshell.org/), même styl
 terminal que le minuteur.
 
 - Choix de la classe dans une liste, puis tirage avec une animation de défilement (< 1 s).
+- Tirage sans remise : chaque élève passe une fois avant qu'un nouveau tour commence
+  (`reste 12/25`, `tour 2`). Un élève absent ? On relance simplement un tirage.
+- Historique des 4 derniers tirés sous le nom affiché.
+- L'état de chaque classe est conservé jusqu'à la fermeture, même en changeant de classe.
 - Fenêtre Hyprland normale, pensée pour rester ouverte tout le cours sur la même
   classe : le raccourci la lance, ou lui redonne le focus si elle est déjà ouverte ;
   `SUPER + F` bascule plein écran / fenêtré.

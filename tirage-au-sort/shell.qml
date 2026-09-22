@@ -9,6 +9,9 @@
 //
 //   Choix de la classe : ↑/↓ (ou j/k) puis Entrée, ou directement le chiffre
 //   Tirage             : Entrée/Espace = tirer un élève, C = changer de classe
+//
+// Tirage sans remise : chacun passe une fois avant qu'un nouveau tour commence.
+// L'état de chaque classe (déjà passés, historique) est conservé jusqu'à la fermeture.
 //   Partout            : Q = quitter (Échap ne quitte pas, pour ne pas perdre la classe par réflexe)
 import QtQuick
 import QtQuick.Effects
@@ -26,7 +29,18 @@ ShellRoot {
 
     property string shown: ""         // nom affiché
     property bool rolling: false      // animation de défilement en cours
+    property string pick: ""          // nom tiré, révélé à la fin de l'animation
+
+    // État de la classe en cours (sauvegardé dans « sessions » quand on change de classe)
+    property var drawn: []            // élèves déjà passés pendant ce tour
+    property var history: []          // derniers tirés, le plus récent en premier
     property int drawCount: 0
+    property int round: 1
+    property var sessions: ({})       // { <classe>: { drawn, history, drawCount, round } }
+
+    // Élèves pas encore passés. Calculé depuis le fichier : un nom ajouté ou retiré est pris en compte.
+    readonly property var remaining:
+        currentClass ? currentClass.students.filter(s => !drawn.includes(s)) : []
     property int rollStep: 0
     readonly property int rollSteps: 14   // ~0,9 s au total (voir rollTimer)
 
@@ -58,6 +72,7 @@ ShellRoot {
     }
 
     function reload() {
+        saveSession()
         mode = "loading"
         loader.running = true
     }
@@ -79,25 +94,53 @@ ShellRoot {
         mode = "select"
     }
 
+    function saveSession() {
+        if (!currentClass) return
+        const copy = Object.assign({}, sessions)
+        copy[currentClass.name] = { drawn: drawn, history: history, drawCount: drawCount, round: round }
+        sessions = copy
+    }
+
     function chooseClass(index) {
         if (index < 0 || index >= classes.length) return
         selected = index
         currentClass = classes[index]
-        shown = ""
-        drawCount = 0
+        const saved = sessions[currentClass.name]
+        drawn = saved ? saved.drawn : []
+        history = saved ? saved.history : []
+        drawCount = saved ? saved.drawCount : 0
+        round = saved ? saved.round : 1
+        shown = history.length > 0 ? history[0] : ""
         mode = "draw"
     }
 
-    function randomStudent() {
+    function randomOf(list) {
+        return list[Math.floor(Math.random() * list.length)]
+    }
+
+    // Nom affiché pendant le défilement : n'importe quel élève, différent du précédent.
+    function rollingName() {
         const s = currentClass.students
         if (s.length < 2) return s[0]
-        let pick
-        do { pick = s[Math.floor(Math.random() * s.length)] } while (pick === shown)
-        return pick
+        let name
+        do { name = randomOf(s) } while (name === shown)
+        return name
     }
 
     function draw() {
         if (rolling || !currentClass || currentClass.students.length === 0) return
+
+        // Tout le monde est passé : nouveau tour.
+        let pool = remaining
+        if (pool.length === 0) {
+            drawn = []
+            round++
+            pool = currentClass.students
+        }
+        // Évite que le dernier tiré ouvre aussi le nouveau tour.
+        const candidates = pool.length > 1 ? pool.filter(s => s !== history[0]) : pool
+        pick = randomOf(candidates)
+
         rollStep = 0
         rolling = true
         rollTimer.interval = 20
@@ -110,14 +153,18 @@ ShellRoot {
         id: rollTimer
         repeat: true
         onTriggered: {
-            root.shown = root.randomStudent()
             root.rollStep++
             interval = 20 + root.rollStep * root.rollStep * 0.75
-            if (root.rollStep >= root.rollSteps) {
-                stop()
-                root.rolling = false
-                root.drawCount++
+            if (root.rollStep < root.rollSteps) {
+                root.shown = root.rollingName()
+                return
             }
+            stop()
+            root.shown = root.pick
+            root.drawn = root.drawn.concat([root.pick])
+            root.history = [root.pick].concat(root.history).slice(0, 5)
+            root.drawCount++
+            root.rolling = false
         }
     }
 
@@ -270,7 +317,7 @@ ShellRoot {
                     visible: root.mode === "draw"
                     anchors.fill: parent
                     anchors.topMargin: win.u * 24
-                    anchors.bottomMargin: win.u * 22
+                    anchors.bottomMargin: win.u * 28
                     anchors.leftMargin: win.width * 0.04
                     anchors.rightMargin: win.width * 0.04
                     horizontalAlignment: Text.AlignHCenter
@@ -289,6 +336,20 @@ ShellRoot {
                           : root.shown !== "" ? root.shown : "_"
                 }
 
+                // Historique des derniers tirés (hors nom affiché)
+                Text {
+                    visible: root.mode === "draw" && root.history.length > 1
+                    width: parent.width * 0.9
+                    anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: win.u * 19 }
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    font.family: root.mono
+                    font.pixelSize: win.u * 3.5
+                    color: root.green
+                    opacity: 0.45
+                    text: "$ history | tail : " + root.history.slice(1).join(" · ")
+                }
+
                 Text {
                     visible: root.mode === "draw"
                     anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: win.u * 12 }
@@ -297,7 +358,12 @@ ShellRoot {
                     color: root.green
                     opacity: 0.6
                     text: root.rolling ? "# random.choice() en cours…"
-                        : root.drawCount > 0 ? "# tirage n°" + root.drawCount
+                        : root.drawCount > 0
+                          ? "# tirage n°" + root.drawCount
+                            + (root.round > 1 ? " · tour " + root.round : "")
+                            + (root.remaining.length === 0
+                               ? " · tout le monde est passé, le prochain tirage relance un tour"
+                               : " · reste " + root.remaining.length + "/" + root.currentClass.students.length)
                         : root.emptyClass
                           ? "# ajoutez des noms dans " + root.configDirShort + "/" + root.currentClass.name + ".txt"
                         : "# prêt"
