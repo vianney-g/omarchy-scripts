@@ -92,6 +92,17 @@ o.bind("SUPER + ALT + T", "Tirage au sort",
 	'omarchy-launch-or-focus org.tirage-au-sort "uwsm-app -- qs -n -c tirage-au-sort"')
 ```
 
+## touches
+
+Plugin Omarchy qui affiche les touches et raccourcis frappés, en bas de l'écran,
+pour la démonstration en classe. Activable par l'icône clavier de la barre ou
+par `SUPER + ALT + C`. Sans accès à `/dev/input` ni privilège : il s'abonne à
+l'événement clavier du bus Lua d'Hyprland 0.56.
+
+Libellés générés depuis vos vraies dispositions clavier (bépo, azerty, qwerty)
+et suivis en cours de session. Voir [touches/README.md](touches/README.md) —
+mécanisme dérivé de [community.keycast](https://github.com/devmobasa/omarchy-keycast) (MIT).
+
 ## Licence
 
 [MIT](LICENSE)

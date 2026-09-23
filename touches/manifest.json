@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "vianney.touches",
+  "name": "Touches",
+  "version": "1.0.0",
+  "author": "Vianney Gremmel",
+  "description": "Affiche les touches et raccourcis frappés, pour la démonstration en classe",
+  "license": "MIT",
+  "kinds": ["service", "bar-widget"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "TouchesWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Touches",
+    "description": "Affichage des frappes clavier",
+    "category": "Plugin",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
