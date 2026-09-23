@@ -11,7 +11,9 @@
 //   Tirage             : Entrée/Espace = tirer un élève, C = changer de classe
 //
 // Tirage sans remise : chacun passe une fois avant qu'un nouveau tour commence.
-// L'état de chaque classe (déjà passés, historique) est conservé jusqu'à la fermeture.
+// L'état de chaque classe (déjà passés, historique) est enregistré sur disque : on
+// retrouve le tour en cours au prochain lancement.
+//   Remise à zéro      : CTRL + MAJ + R (volontairement peu accessible)
 //   Partout            : Q = quitter (Échap ne quitte pas, pour ne pas perdre la classe par réflexe)
 import QtQuick
 import QtQuick.Effects
@@ -37,6 +39,7 @@ ShellRoot {
     property int drawCount: 0
     property int round: 1
     property var sessions: ({})       // { <classe>: { drawn, history, drawCount, round } }
+    property string flash: ""         // message temporaire (remise à zéro)
 
     // Élèves pas encore passés. Calculé depuis le fichier : un nom ajouté ou retiré est pris en compte.
     readonly property var remaining:
@@ -59,6 +62,42 @@ ShellRoot {
 
     function plural(n) { return n + (n > 1 ? " élèves" : " élève") }
 
+    // --- État conservé d'une séance à l'autre ---
+    FileView {
+        id: stateFile
+        path: Quickshell.statePath("sessions.json")
+        blockLoading: true
+        printErrors: false
+    }
+
+    function loadSessions() {
+        try { sessions = JSON.parse(stateFile.text()) || ({}) }
+        catch (e) { sessions = ({}) }
+    }
+
+    function persist() {
+        saveSession()
+        stateFile.setText(JSON.stringify(sessions))
+    }
+
+    function resetClass() {
+        if (!currentClass) return
+        drawn = []
+        history = []
+        drawCount = 0
+        round = 1
+        shown = ""
+        persist()
+        flash = "# état de " + currentClass.name + " remis à zéro"
+        flashTimer.restart()
+    }
+
+    Timer {
+        id: flashTimer
+        interval: 2500
+        onTriggered: root.flash = ""
+    }
+
     // --- Lecture des classes ---
     // Chaque fichier est précédé d'une ligne « \x1f<classe> » pour les séparer.
     Process {
@@ -72,7 +111,7 @@ ShellRoot {
     }
 
     function reload() {
-        saveSession()
+        persist()
         mode = "loading"
         loader.running = true
     }
@@ -165,6 +204,7 @@ ShellRoot {
             root.history = [root.pick].concat(root.history).slice(0, 5)
             root.drawCount++
             root.rolling = false
+            root.persist()
         }
     }
 
@@ -175,7 +215,10 @@ ShellRoot {
         onTriggered: root.now = new Date()
     }
 
-    Component.onCompleted: reload()
+    Component.onCompleted: {
+        loadSessions()
+        reload()
+    }
 
     FloatingWindow {
         id: win
@@ -195,7 +238,9 @@ ShellRoot {
 
             Keys.onPressed: event => {
                 const k = event.key
-                if (k === Qt.Key_Q) Qt.quit()
+                const ctrlShift = (event.modifiers & Qt.ControlModifier) && (event.modifiers & Qt.ShiftModifier)
+                if (k === Qt.Key_Q) { root.persist(); Qt.quit() }
+                else if (k === Qt.Key_R && ctrlShift) root.resetClass()
                 else if (root.mode === "select") {
                     if (k === Qt.Key_Down || k === Qt.Key_J)
                         root.selected = Math.min(root.selected + 1, root.classes.length - 1)
@@ -357,7 +402,8 @@ ShellRoot {
                     font.pixelSize: win.u * 3.5
                     color: root.green
                     opacity: 0.6
-                    text: root.rolling ? "# random.choice() en cours…"
+                    text: root.flash !== "" ? root.flash
+                        : root.rolling ? "# random.choice() en cours…"
                         : root.drawCount > 0
                           ? "# tirage n°" + root.drawCount
                             + (root.round > 1 ? " · tour " + root.round : "")
@@ -376,7 +422,7 @@ ShellRoot {
                     font.pixelSize: win.u * 2.5
                     color: root.green
                     opacity: 0.5
-                    text: "[Entrée] ou [Espace] tirer   [C] changer de classe   [Q] quitter"
+                    text: "[Entrée] ou [Espace] tirer   [C] changer de classe   [Ctrl+Maj+R] remise à zéro   [Q] quitter"
                 }
             }
 

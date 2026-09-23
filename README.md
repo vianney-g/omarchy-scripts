@@ -46,7 +46,9 @@ terminal que le minuteur.
 - Tirage sans remise : chaque élève passe une fois avant qu'un nouveau tour commence
   (`reste 12/25`, `tour 2`). Un élève absent ? On relance simplement un tirage.
 - Historique des 4 derniers tirés sous le nom affiché.
-- L'état de chaque classe est conservé jusqu'à la fermeture, même en changeant de classe.
+- L'état de chaque classe (tour en cours, élèves déjà passés, historique) est
+  enregistré : on le retrouve au lancement suivant. Remise à zéro par
+  `Ctrl + Maj + R`, un raccourci volontairement peu accessible.
 - Fenêtre Hyprland normale, pensée pour rester ouverte tout le cours sur la même
   classe : le raccourci la lance, ou lui redonne le focus si elle est déjà ouverte ;
   `SUPER + F` bascule plein écran / fenêtré.
@@ -59,6 +61,7 @@ terminal que le minuteur.
 | `1` … `9` | choisir directement la classe n° |
 | `Entrée` / `Espace` | tirer un élève |
 | `C` | changer de classe (relit les fichiers) |
+| `Ctrl` + `Maj` + `R` | remettre à zéro le tour de la classe affichée |
 | `Q` | quitter (Échap ne quitte pas, pour ne pas perdre la classe par réflexe) |
 
 ### Configuration des classes
@@ -71,6 +74,10 @@ nom du fichier donne le nom de la classe (`L1.txt` → « L1 »).
 mkdir -p ~/.config/tirage-au-sort
 cp tirage-au-sort/exemple/*.txt ~/.config/tirage-au-sort/   # puis éditer
 ```
+
+L'état des tirages est enregistré à part, dans
+`~/.local/state/quickshell/by-shell/<id>/sessions.json`. Ce fichier contient des
+noms d'élèves : il reste sur la machine et n'a pas sa place dans un dépôt.
 
 ### Installation
 
