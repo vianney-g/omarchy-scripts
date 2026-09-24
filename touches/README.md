@@ -21,6 +21,18 @@ chaque événement en événement socket2 que le shell consomme. **Aucun accès 
 retiré : le compositeur ne fait plus rien par touche. Les frappes ne sont
 jamais écrites sur disque, elles n'existent qu'en mémoire et à l'écran.
 
+## Abonnement Lua : un seul, toujours
+
+L'abonnement vit dans Hyprland, pas dans le shell : il survit au redémarrage du
+shell. Réassigner la variable Lua `TOUCHES_SUB` ne supprimerait pas l'ancien
+abonnement, qui continuerait d'émettre — chaque frappe serait alors comptée
+deux fois, trois fois… Le handler retire donc toujours l'abonnement existant
+avant d'en créer un. En complément, deux événements identiques séparés de moins
+de 8 ms sont considérés comme un doublon et non comme une double frappe.
+
+Un abonnement orphelin d'une version antérieure n'est pas récupérable depuis
+Lua (Hyprland le retient côté C++) : il disparaît à la fermeture de session.
+
 ## Libellés et disposition clavier
 
 L'événement ne transporte qu'un code de touche physique. Les libellés sont donc

@@ -8,9 +8,19 @@
 
 // Le handler reste court : les callbacks Lua tournent sur le thread du
 // compositeur, sous surveillance d'un chien de garde.
-var REGISTER_LUA = 'TOUCHES_SUB = hl.on("input.keyboard.key", function(kc, t, state) '
-  + 'hl.dispatch(hl.dsp.event("touches," .. kc .. "," .. state)) end)'
+//
+// L'abonnement vit dans Hyprland, pas dans le shell : il survit à un
+// redémarrage du shell. Réassigner TOUCHES_SUB ne supprimerait pas l'ancien
+// abonnement, qui continuerait d'émettre — d'où un événement par abonnement
+// fuité (×2, ×3…). On retire donc toujours l'abonnement existant d'abord.
 var UNREGISTER_LUA = 'if TOUCHES_SUB then TOUCHES_SUB:remove() TOUCHES_SUB = nil end'
+var REGISTER_LUA = UNREGISTER_LUA
+  + ' TOUCHES_SUB = hl.on("input.keyboard.key", function(kc, t, state) '
+  + 'hl.dispatch(hl.dsp.event("touches," .. kc .. "," .. state)) end)'
+
+// Garde-fou : deux événements identiques à quelques millisecondes d'intervalle
+// sont un doublon, pas une double frappe (l'auto-répétition dépasse les 25 ms).
+var DEDUPE_MS = 8
 
 var MAX_ENTRIES = 6
 

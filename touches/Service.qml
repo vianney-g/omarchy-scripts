@@ -26,6 +26,11 @@ Item {
     property string layout: "qwerty"
     property string lastError: ""
 
+    // Dernier événement reçu, pour écarter les doublons (voir DEDUPE_MS).
+    property int lastCode: -1
+    property bool lastPressed: false
+    property real lastAt: 0
+
     readonly property color green: "#33ff66"
     readonly property color dim: "#020803"
     readonly property string mono: "JetBrainsMono Nerd Font"
@@ -76,6 +81,12 @@ Item {
                 if (!root.enabled) return
                 const parsed = Model.parseEvent(event.data)
                 if (parsed === null) return
+                const at = Date.now()
+                if (parsed.code === root.lastCode && parsed.pressed === root.lastPressed
+                    && at - root.lastAt < Model.DEDUPE_MS) return
+                root.lastCode = parsed.code
+                root.lastPressed = parsed.pressed
+                root.lastAt = at
                 root.hudState = Model.applyEvent(root.hudState, parsed, root.layout)
                 if (parsed.pressed) idleTimer.restart()
             } else if (event.name === "activelayout" && root.enabled) {
