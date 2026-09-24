@@ -30,10 +30,9 @@ Item {
     // orphelin portent une autre signature et sont ignorés.
     property string tag: ""
 
-    // Dernier événement reçu, pour écarter les doublons (voir DEDUPE_MS).
-    property int lastCode: -1
-    property bool lastPressed: false
-    property real lastAt: 0
+    // Identifiants des derniers événements reçus (code:horodatage:état).
+    // Hyprland livre chaque événement deux fois : la seconde copie est écartée.
+    property var seen: []
 
     readonly property color green: "#33ff66"
     readonly property color dim: "#020803"
@@ -89,12 +88,8 @@ Item {
                 if (!root.enabled) return
                 const parsed = Model.parseEvent(event.data, root.tag)
                 if (parsed === null) return
-                const at = Date.now()
-                if (parsed.code === root.lastCode && parsed.pressed === root.lastPressed
-                    && at - root.lastAt < Model.DEDUPE_MS) return
-                root.lastCode = parsed.code
-                root.lastPressed = parsed.pressed
-                root.lastAt = at
+                if (root.seen.indexOf(parsed.id) >= 0) return
+                root.seen = root.seen.concat([parsed.id]).slice(-Model.SEEN_MAX)
                 root.hudState = Model.applyEvent(root.hudState, parsed, root.layout)
                 if (parsed.pressed) idleTimer.restart()
             } else if (event.name === "activelayout" && root.enabled) {

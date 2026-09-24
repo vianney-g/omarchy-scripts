@@ -17,12 +17,18 @@
 //   2. chaque enregistrement porte une signature unique, et le service ignore
 //      les événements d'une autre signature. Un orphelin devient inaudible,
 //      quel que soit l'espacement de ses copies.
+//
+// Par ailleurs, Hyprland 0.56 appelle le handler deux fois pour un même
+// événement. Les copies portent le même horodatage compositeur : on le
+// transporte dans la charge utile et on écarte tout triplet déjà vu. Aucune
+// heuristique de délai — indispensable avec un clavier à « home row mods »,
+// où la copie arrive parfois après le relâchement.
 var UNREGISTER_LUA = 'if TOUCHES_SUB then TOUCHES_SUB:remove() TOUCHES_SUB = nil end'
 
 function registerLua(tag) {
   return UNREGISTER_LUA
     + ' TOUCHES_SUB = hl.on("input.keyboard.key", function(kc, t, state) '
-    + 'hl.dispatch(hl.dsp.event("touches-' + tag + '," .. kc .. "," .. state)) end)'
+    + 'hl.dispatch(hl.dsp.event("touches-' + tag + '," .. kc .. "," .. t .. "," .. state)) end)'
 }
 
 function newTag() {
@@ -30,20 +36,20 @@ function newTag() {
     .replace(/[^a-z0-9]/g, "")
 }
 
-// Garde-fou supplémentaire : deux événements identiques à quelques
-// millisecondes d'intervalle sont un doublon, pas une double frappe.
-var DEDUPE_MS = 8
+// Nombre d'événements récents retenus pour écarter les doublons.
+var SEEN_MAX = 16
 
 var MAX_ENTRIES = 6
 
-// « touches-<signature>,<code xkb>,<état> » — état 1 = appui, 0 = relâchement.
+// « touches-<signature>,<code xkb>,<horodatage>,<état> »
+// état 1 = appui, 0 = relâchement.
 function parseEvent(data, tag) {
   var parts = String(data == null ? "" : data).split(",")
-  if (parts.length !== 3 || parts[0] !== "touches-" + tag) return null
+  if (parts.length !== 4 || parts[0] !== "touches-" + tag) return null
   var keycode = Number(parts[1])
   if (!isFinite(keycode) || keycode <= 8 || keycode !== Math.floor(keycode)) return null
-  if (parts[2] !== "0" && parts[2] !== "1") return null
-  return { code: keycode - 8, pressed: parts[2] === "1" }
+  if (parts[3] !== "0" && parts[3] !== "1") return null
+  return { code: keycode - 8, pressed: parts[3] === "1", id: parts[1] + ":" + parts[2] + ":" + parts[3] }
 }
 
 // Nom de disposition d'après le keymap actif rapporté par Hyprland.

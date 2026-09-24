@@ -35,10 +35,17 @@ côté C++) et survit jusqu'à la fermeture de session. Chaque enregistrement
 porte donc une **signature unique** : le service n'écoute que les événements
 de la sienne, et un orphelin devient inaudible.
 
-Le détail compte : avec un clavier à *home row mods*, la copie d'un orphelin
-arrive parfois après le relâchement (`appui, relâché, appui, relâché`), et non
-collée à l'original. Aucun filtre temporel ne la distingue alors d'une double
-frappe — seule la signature le peut.
+## Hyprland livre chaque événement deux fois
+
+Mesuré sur Hyprland 0.56.2 : le handler est appelé **deux fois pour un même
+événement**, les deux copies portant le même horodatage compositeur. L'ordre
+varie selon la touche — `appui, appui, relâché, relâché` pour une touche
+ordinaire, mais `appui, relâché, appui, relâché` pour une touche à *home row
+mod*, où la copie arrive après le relâchement.
+
+Aucun filtre temporel ne distingue ce second cas d'une double frappe. Le
+handler transporte donc l'horodatage de l'événement, et le service écarte tout
+triplet `code:horodatage:état` déjà vu : exact, sans heuristique.
 
 ## Libellés et disposition clavier
 
