@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Télécommande des utilitaires de cours, pensée pour les boutons « Exécuter une
+# commande » de KDE Connect sur le téléphone.
+#
+#   cours minuteur <minutes>   lance le minuteur (si besoin) et démarre le décompte
+#   cours minuteur pause|restart|quit
+#   cours tirage [<classe>]    lance le tirage au sort (ou le met au premier plan)
+#   cours tirage draw|reload|quit
+#   cours touches              affiche / masque les touches à l'écran
+#
+# Les erreurs s'affichent en notification : on n'a pas de terminal sous les yeux.
+
+set -uo pipefail
+
+fail() {
+	notify-send -a "Télécommande" "cours : $*" 2>/dev/null
+	echo "cours : $*" >&2
+	exit 1
+}
+
+running() { qs -c "$1" ipc show >/dev/null 2>&1; }
+
+# Attend (~3 s au plus) que l'instance réponde à l'IPC.
+wait_ipc() {
+	for _ in $(seq 30); do
+		running "$1" && return 0
+		sleep 0.1
+	done
+	fail "$1 ne répond pas"
+}
+
+# Appel IPC ; un texte renvoyé par l'outil est un message d'erreur.
+call() {
+	local config=$1
+	shift
+	running "$config" || fail "$config n'est pas lancé"
+	local out
+	out=$(qs -c "$config" ipc call "$@" 2>&1) || fail "$out"
+	[[ -z $out ]] || fail "$out"
+}
+
+minuteur() {
+	local arg=${1:-}
+	case $arg in
+	pause | restart | quit) call minuteur minuteur "$arg" ;;
+	'' | *[!0-9]* | 0) fail "usage : cours minuteur <minutes>|pause|restart|quit" ;;
+	*)
+		if ! running minuteur; then
+			setsid -f qs -n -c minuteur >/dev/null 2>&1
+			wait_ipc minuteur
+		fi
+		call minuteur minuteur start "$arg"
+		;;
+	esac
+}
+
+tirage() {
+	local arg=${1:-}
+	case $arg in
+	draw | reload | quit) call tirage-au-sort tirage "$arg" ;;
+	*)
+		# Même commande que le raccourci SUPER + ALT + T, détachée : lancée au premier
+		# plan, elle ne rend la main qu'à la fermeture de l'outil.
+		setsid -f omarchy-launch-or-focus org.tirage-au-sort "uwsm-app -- qs -n -c tirage-au-sort" >/dev/null 2>&1
+		if [[ -n $arg ]]; then
+			wait_ipc tirage-au-sort
+			call tirage-au-sort tirage choose "$arg"
+		fi
+		;;
+	esac
+}
+
+case ${1:-} in
+minuteur) minuteur "${2:-}" ;;
+tirage) tirage "${2:-}" ;;
+touches) omarchy-shell vianney.touches toggle ;;
+*) fail "usage : cours minuteur|tirage|touches …" ;;
+esac

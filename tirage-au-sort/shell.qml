@@ -1,6 +1,7 @@
 //@ pragma AppId org.tirage-au-sort
 // Tirage au sort d'un élève, pour vidéoprojecteur — style terminal à phosphore.
-// Fenêtre Hyprland normale : SUPER + F bascule plein écran / fenêtré.
+// Fenêtre Hyprland normale, ouverte en plein écran par une règle de fenêtre
+// (voir README) : SUPER + F bascule plein écran / fenêtré.
 // Lancement : omarchy-launch-or-focus org.tirage-au-sort "uwsm-app -- qs -n -c tirage-au-sort"
 //   (raccourci SUPER + ALT + T : lance l'outil, ou lui donne le focus s'il est déjà ouvert)
 //
@@ -131,6 +132,39 @@ ShellRoot {
         classes = result
         selected = Math.min(selected, Math.max(0, result.length - 1))
         mode = "select"
+        if (pendingClass !== "") {
+            const name = pendingClass
+            pendingClass = ""
+            chooseClassByName(name)
+        }
+    }
+
+    // Classe demandée par IPC pendant la lecture des fichiers, choisie dès qu'ils sont lus.
+    property string pendingClass: ""
+
+    function chooseClassByName(name) {
+        if (mode === "loading") { pendingClass = name; return "" }
+        const i = classes.findIndex(c => c.name === name)
+        if (i < 0) return "classe inconnue : " + name
+        persist()               // garde le tour de la classe quittée
+        chooseClass(i)
+        return ""
+    }
+
+    // Pilotage à distance (téléphone via telecommande/cours) :
+    //   qs -c tirage-au-sort ipc call tirage choose L1
+    // Pas de remise à zéro par IPC : elle reste volontairement difficile d'accès.
+    IpcHandler {
+        target: "tirage"
+
+        function choose(name: string): string { return root.chooseClassByName(name) }
+        function draw(): string {
+            if (root.mode !== "draw") return "aucune classe choisie"
+            root.draw()
+            return ""
+        }
+        function reload(): void { root.reload() }
+        function quit(): void { root.persist(); Qt.quit() }
     }
 
     function saveSession() {

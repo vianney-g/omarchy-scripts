@@ -143,6 +143,20 @@ ShellRoot {
         }
     }
 
+    // Pilotage à distance (téléphone via telecommande/cours) :
+    //   qs -c minuteur ipc call minuteur start 10
+    IpcHandler {
+        target: "minuteur"
+
+        function start(minutes: int): void { if (minutes > 0) root.start(minutes) }
+        function pause(): void { root.togglePause() }
+        function restart(): void { if (root.mode !== "input") root.start(root.totalMinutes) }
+        function quit(): void { root.quit() }
+        function status(): string {
+            return root.mode + " " + root.display + (root.paused ? " (pause)" : "")
+        }
+    }
+
     // Horloge affichée en haut à droite.
     Timer {
         interval: 1000
