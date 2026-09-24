@@ -10,24 +10,36 @@
 // compositeur, sous surveillance d'un chien de garde.
 //
 // L'abonnement vit dans Hyprland, pas dans le shell : il survit à un
-// redémarrage du shell. Réassigner TOUCHES_SUB ne supprimerait pas l'ancien
-// abonnement, qui continuerait d'émettre — d'où un événement par abonnement
-// fuité (×2, ×3…). On retire donc toujours l'abonnement existant d'abord.
+// redémarrage du shell, et un abonnement dont la référence Lua a été perdue
+// n'est plus supprimable (Hyprland le retient côté C++) — il continue d'émettre
+// jusqu'à la fin de la session. Deux parades :
+//   1. on retire toujours l'abonnement connu avant d'en créer un ;
+//   2. chaque enregistrement porte une signature unique, et le service ignore
+//      les événements d'une autre signature. Un orphelin devient inaudible,
+//      quel que soit l'espacement de ses copies.
 var UNREGISTER_LUA = 'if TOUCHES_SUB then TOUCHES_SUB:remove() TOUCHES_SUB = nil end'
-var REGISTER_LUA = UNREGISTER_LUA
-  + ' TOUCHES_SUB = hl.on("input.keyboard.key", function(kc, t, state) '
-  + 'hl.dispatch(hl.dsp.event("touches," .. kc .. "," .. state)) end)'
 
-// Garde-fou : deux événements identiques à quelques millisecondes d'intervalle
-// sont un doublon, pas une double frappe (l'auto-répétition dépasse les 25 ms).
+function registerLua(tag) {
+  return UNREGISTER_LUA
+    + ' TOUCHES_SUB = hl.on("input.keyboard.key", function(kc, t, state) '
+    + 'hl.dispatch(hl.dsp.event("touches-' + tag + '," .. kc .. "," .. state)) end)'
+}
+
+function newTag() {
+  return String(Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36))
+    .replace(/[^a-z0-9]/g, "")
+}
+
+// Garde-fou supplémentaire : deux événements identiques à quelques
+// millisecondes d'intervalle sont un doublon, pas une double frappe.
 var DEDUPE_MS = 8
 
 var MAX_ENTRIES = 6
 
-// « touches,<code xkb>,<état> » — état 1 = appui, 0 = relâchement.
-function parseEvent(data) {
+// « touches-<signature>,<code xkb>,<état> » — état 1 = appui, 0 = relâchement.
+function parseEvent(data, tag) {
   var parts = String(data == null ? "" : data).split(",")
-  if (parts.length !== 3 || parts[0] !== "touches") return null
+  if (parts.length !== 3 || parts[0] !== "touches-" + tag) return null
   var keycode = Number(parts[1])
   if (!isFinite(keycode) || keycode <= 8 || keycode !== Math.floor(keycode)) return null
   if (parts[2] !== "0" && parts[2] !== "1") return null

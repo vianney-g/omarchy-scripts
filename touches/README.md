@@ -30,8 +30,15 @@ deux fois, trois fois… Le handler retire donc toujours l'abonnement existant
 avant d'en créer un. En complément, deux événements identiques séparés de moins
 de 8 ms sont considérés comme un doublon et non comme une double frappe.
 
-Un abonnement orphelin d'une version antérieure n'est pas récupérable depuis
-Lua (Hyprland le retient côté C++) : il disparaît à la fermeture de session.
+Un abonnement orphelin n'est pas récupérable depuis Lua (Hyprland le retient
+côté C++) et survit jusqu'à la fermeture de session. Chaque enregistrement
+porte donc une **signature unique** : le service n'écoute que les événements
+de la sienne, et un orphelin devient inaudible.
+
+Le détail compte : avec un clavier à *home row mods*, la copie d'un orphelin
+arrive parfois après le relâchement (`appui, relâché, appui, relâché`), et non
+collée à l'original. Aucun filtre temporel ne la distingue alors d'une double
+frappe — seule la signature le peut.
 
 ## Libellés et disposition clavier
 

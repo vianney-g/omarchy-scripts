@@ -26,6 +26,10 @@ Item {
     property string layout: "qwerty"
     property string lastError: ""
 
+    // Signature de l'enregistrement courant : les événements d'un abonnement
+    // orphelin portent une autre signature et sont ignorés.
+    property string tag: ""
+
     // Dernier événement reçu, pour écarter les doublons (voir DEDUPE_MS).
     property int lastCode: -1
     property bool lastPressed: false
@@ -55,8 +59,12 @@ Item {
         lastError = ""
         enabled = next
         hudState = Model.emptyState()
-        if (next) detectLayout()
-        replProcess.command = ["hyprctl", "repl", next ? Model.REGISTER_LUA : Model.UNREGISTER_LUA]
+        if (next) {
+            detectLayout()
+            tag = Model.newTag()
+        }
+        replProcess.command = ["hyprctl", "repl",
+            next ? Model.registerLua(tag) : Model.UNREGISTER_LUA]
         run(replProcess)
     }
 
@@ -79,7 +87,7 @@ Item {
         function onRawEvent(event) {
             if (event.name === "custom") {
                 if (!root.enabled) return
-                const parsed = Model.parseEvent(event.data)
+                const parsed = Model.parseEvent(event.data, root.tag)
                 if (parsed === null) return
                 const at = Date.now()
                 if (parsed.code === root.lastCode && parsed.pressed === root.lastPressed
@@ -92,8 +100,9 @@ Item {
             } else if (event.name === "activelayout" && root.enabled) {
                 root.detectLayout()
             } else if (event.name === "configreloaded" && root.enabled) {
-                // La VM Lua du repl est réinitialisée : l'abonnement a disparu.
-                replProcess.command = ["hyprctl", "repl", Model.REGISTER_LUA]
+                // Réenregistrement défensif après un rechargement de config.
+                root.tag = Model.newTag()
+                replProcess.command = ["hyprctl", "repl", Model.registerLua(root.tag)]
                 root.run(replProcess)
             }
         }
@@ -144,6 +153,7 @@ Item {
         function status(): string {
             return JSON.stringify({
                 "enabled": root.enabled,
+                "tag": root.tag,
                 "layout": root.layout,
                 "entries": root.hudState.entries.length,
                 "error": root.lastError
