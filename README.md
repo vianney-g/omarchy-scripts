@@ -149,8 +149,8 @@ l'infobulle donne le jour liturgique ; un clic ouvre le panneau de lecture.
 ### Installation
 
 ```bash
-ln -s "$PWD/aelf" ~/.config/omarchy/plugins/vianney.aelf
-omarchy plugin enable vianney.aelf --section right
+ln -s "$PWD/aelf" ~/.config/omarchy/plugins/io.github.vianney-g.aelf
+omarchy plugin enable io.github.vianney-g.aelf --section right
 ```
 
 Réglages facultatifs dans l'entrée du widget de `~/.config/omarchy/shell.json` :
@@ -162,9 +162,9 @@ Le panneau suit le thème Omarchy : police, arrondis, couleurs et états
 (survol, sélection) des contrôles. Seule exception, voulue : la pastille de la
 couleur liturgique du jour.
 
-Ouverture depuis un raccourci : `omarchy-shell shell toggle vianney.aelf`, ou
-`omarchy-shell vianney.aelf open laudes` pour un office précis, et
-`omarchy-shell vianney.aelf date 25/12` pour une date.
+Ouverture depuis un raccourci : `omarchy-shell shell toggle io.github.vianney-g.aelf`, ou
+`omarchy-shell io.github.vianney-g.aelf open laudes` pour un office précis, et
+`omarchy-shell io.github.vianney-g.aelf date 25/12` pour une date.
 
 Les textes liturgiques restent la propriété de l'AELF : l'API est gratuite pour
 un usage non commercial, rien n'est enregistré ni redistribué ici.
