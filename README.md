@@ -114,60 +114,9 @@ mécanisme dérivé de [community.keycast](https://github.com/devmobasa/omarchy-
 
 ## aelf
 
-Publié aussi comme dépôt autonome : [vianney-g/omarchy-aelf](https://github.com/vianney-g/omarchy-aelf)
-(extrait de ce dossier par `git subtree`).
-
-Plugin du shell Omarchy : lectures de la messe et prière des Heures du jour,
-tirées de l'[API de l'AELF](https://api.aelf.org). Une croix dans la barre,
-l'infobulle donne le jour liturgique ; un clic ouvre le panneau de lecture.
-
-- En-tête : date, fête ou férie, pastille de la couleur liturgique.
-- Onglets : Messe, Lectures, Laudes, Tierce, Sexte, None, Vêpres, Complies.
-- Sous chaque onglet, un carrousel des textes (1re lecture, Psaume, Évangile ;
-  psaumes, cantiques, oraison…) : un seul texte affiché à la fois.
-  Quand il y a plusieurs messes (Noël, Pâques…), on choisit laquelle au-dessus.
-- Navigation par date : `‹ ›` autour de la date, bouton « Aujourd'hui », ou un
-  clic sur la date pour en taper une : `25/12`, `25/12/2027`, `2027-01-06`,
-  `8 décembre`, `1er mai 2027`, `+7`, `-3`, `demain`, `hier`. L'AELF publie les
-  textes environ neuf mois à l'avance.
-- Les textes déjà consultés restent en mémoire ; clic droit sur l'icône pour
-  recharger.
-
-| Touche | Action |
-|--------|--------|
-| `←` `→` (ou `h` `l`) | texte précédent / suivant |
-| `Tab` / `Maj + Tab` | office suivant / précédent |
-| `1` à `8` | aller directement à un office |
-| `↑` `↓` (ou `j` `k`), `Espace` | faire défiler le texte |
-| `p` / `s` | jour précédent / suivant |
-| `a` | revenir à aujourd'hui |
-| `d` | taper une date (`Entrée` valide, `Échap` annule) |
-| `m` | messe suivante (jours à plusieurs messes) |
-| `r` | recharger |
-| `Échap` | fermer |
-
-### Installation
-
-```bash
-ln -s "$PWD/aelf" ~/.config/omarchy/plugins/io.github.vianney-g.aelf
-omarchy plugin enable io.github.vianney-g.aelf --section right
-```
-
-Réglages facultatifs dans l'entrée du widget de `~/.config/omarchy/shell.json` :
-`"zone"` (`afrique` par défaut ; aussi `france`, `belgique`, `canada`, `suisse`,
-`luxembourg`, `romain`), `"fontSize"` (taille du texte, en pixels) et
-`"readingFont"` (police des textes, par exemple `"serif"`).
-
-Le panneau suit le thème Omarchy : police, arrondis, couleurs et états
-(survol, sélection) des contrôles. Seule exception, voulue : la pastille de la
-couleur liturgique du jour.
-
-Ouverture depuis un raccourci : `omarchy-shell shell toggle io.github.vianney-g.aelf`, ou
-`omarchy-shell io.github.vianney-g.aelf open laudes` pour un office précis, et
-`omarchy-shell io.github.vianney-g.aelf date 25/12` pour une date.
-
-Les textes liturgiques restent la propriété de l'AELF : l'API est gratuite pour
-un usage non commercial, rien n'est enregistré ni redistribué ici.
+Lectures de la messe et prière des Heures du jour (API de l'AELF) : le plugin
+a désormais son propre dépôt, [vianney-g/omarchy-aelf](https://github.com/vianney-g/omarchy-aelf),
+installable par `omarchy plugin add https://github.com/vianney-g/omarchy-aelf --enable`.
 
 ## Télécommande depuis le téléphone
 
