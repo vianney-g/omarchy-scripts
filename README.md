@@ -120,15 +120,18 @@ l'infobulle donne le jour liturgique ; un clic ouvre le panneau de lecture.
 
 - En-tête : date, fête ou férie, pastille de la couleur liturgique.
 - Onglets : Messe, Lectures, Laudes, Tierce, Sexte, None, Vêpres, Complies.
-  Quand il y a plusieurs messes (Noël, Pâques…), on choisit laquelle sous les onglets.
+- Sous chaque onglet, un carrousel des textes (1re lecture, Psaume, Évangile ;
+  psaumes, cantiques, oraison…) : un seul texte affiché à la fois.
+  Quand il y a plusieurs messes (Noël, Pâques…), on choisit laquelle au-dessus.
 - Les textes sont gardés en mémoire pour la journée ; clic droit sur la croix
   pour recharger.
 
 | Touche | Action |
 |--------|--------|
-| `←` `→` (ou `h` `l`) | office précédent / suivant |
+| `←` `→` (ou `h` `l`) | texte précédent / suivant |
+| `Tab` / `Maj + Tab` | office suivant / précédent |
 | `1` à `8` | aller directement à un office |
-| `↑` `↓` (ou `j` `k`), `Espace` | faire défiler |
+| `↑` `↓` (ou `j` `k`), `Espace` | faire défiler le texte |
 | `m` | messe suivante (jours à plusieurs messes) |
 | `r` | recharger |
 | `Échap` | fermer |
@@ -142,9 +145,14 @@ omarchy plugin enable vianney.aelf --section right
 
 Réglages facultatifs dans l'entrée du widget de `~/.config/omarchy/shell.json` :
 `"zone"` (`afrique` par défaut ; aussi `france`, `belgique`, `canada`, `suisse`,
-`luxembourg`, `romain`) et `"fontSize"` (taille du texte, en pixels).
+`luxembourg`, `romain`), `"fontSize"` (taille du texte, en pixels) et
+`"readingFont"` (police des textes, par exemple `"serif"`).
 
-Ouverture depuis un raccourci : `omarchy-shell vianney.aelf toggle`, ou
+Le panneau suit le thème Omarchy : police, arrondis, couleurs et états
+(survol, sélection) des contrôles. Seule exception, voulue : la pastille de la
+couleur liturgique du jour.
+
+Ouverture depuis un raccourci : `omarchy-shell shell toggle vianney.aelf`, ou
 `omarchy-shell vianney.aelf open laudes` pour un office précis.
 
 Les textes liturgiques restent la propriété de l'AELF : l'API est gratuite pour
