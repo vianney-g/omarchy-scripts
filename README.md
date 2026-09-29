@@ -114,6 +114,9 @@ mécanisme dérivé de [community.keycast](https://github.com/devmobasa/omarchy-
 
 ## aelf
 
+Publié aussi comme dépôt autonome : [vianney-g/omarchy-aelf](https://github.com/vianney-g/omarchy-aelf)
+(extrait de ce dossier par `git subtree`).
+
 Plugin du shell Omarchy : lectures de la messe et prière des Heures du jour,
 tirées de l'[API de l'AELF](https://api.aelf.org). Une croix dans la barre,
 l'infobulle donne le jour liturgique ; un clic ouvre le panneau de lecture.
