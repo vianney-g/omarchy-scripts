@@ -112,6 +112,44 @@ Libellés générés depuis vos vraies dispositions clavier (bépo, azerty, qwer
 et suivis en cours de session. Voir [touches/README.md](touches/README.md) —
 mécanisme dérivé de [community.keycast](https://github.com/devmobasa/omarchy-keycast) (MIT).
 
+## aelf
+
+Plugin du shell Omarchy : lectures de la messe et prière des Heures du jour,
+tirées de l'[API de l'AELF](https://api.aelf.org). Une croix dans la barre,
+l'infobulle donne le jour liturgique ; un clic ouvre le panneau de lecture.
+
+- En-tête : date, fête ou férie, pastille de la couleur liturgique.
+- Onglets : Messe, Lectures, Laudes, Tierce, Sexte, None, Vêpres, Complies.
+  Quand il y a plusieurs messes (Noël, Pâques…), on choisit laquelle sous les onglets.
+- Les textes sont gardés en mémoire pour la journée ; clic droit sur la croix
+  pour recharger.
+
+| Touche | Action |
+|--------|--------|
+| `←` `→` (ou `h` `l`) | office précédent / suivant |
+| `1` à `8` | aller directement à un office |
+| `↑` `↓` (ou `j` `k`), `Espace` | faire défiler |
+| `m` | messe suivante (jours à plusieurs messes) |
+| `r` | recharger |
+| `Échap` | fermer |
+
+### Installation
+
+```bash
+ln -s "$PWD/aelf" ~/.config/omarchy/plugins/vianney.aelf
+omarchy plugin enable vianney.aelf --section right
+```
+
+Réglages facultatifs dans l'entrée du widget de `~/.config/omarchy/shell.json` :
+`"zone"` (`afrique` par défaut ; aussi `france`, `belgique`, `canada`, `suisse`,
+`luxembourg`, `romain`) et `"fontSize"` (taille du texte, en pixels).
+
+Ouverture depuis un raccourci : `omarchy-shell vianney.aelf toggle`, ou
+`omarchy-shell vianney.aelf open laudes` pour un office précis.
+
+Les textes liturgiques restent la propriété de l'AELF : l'API est gratuite pour
+un usage non commercial, rien n'est enregistré ni redistribué ici.
+
 ## Télécommande depuis le téléphone
 
 Le script [`telecommande/cours`](telecommande/cours) lance les outils et les pilote
