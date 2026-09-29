@@ -123,8 +123,12 @@ l'infobulle donne le jour liturgique ; un clic ouvre le panneau de lecture.
 - Sous chaque onglet, un carrousel des textes (1re lecture, Psaume, Évangile ;
   psaumes, cantiques, oraison…) : un seul texte affiché à la fois.
   Quand il y a plusieurs messes (Noël, Pâques…), on choisit laquelle au-dessus.
-- Les textes sont gardés en mémoire pour la journée ; clic droit sur la croix
-  pour recharger.
+- Navigation par date : `‹ ›` autour de la date, bouton « Aujourd'hui », ou un
+  clic sur la date pour en taper une : `25/12`, `25/12/2027`, `2027-01-06`,
+  `8 décembre`, `1er mai 2027`, `+7`, `-3`, `demain`, `hier`. L'AELF publie les
+  textes environ neuf mois à l'avance.
+- Les textes déjà consultés restent en mémoire ; clic droit sur l'icône pour
+  recharger.
 
 | Touche | Action |
 |--------|--------|
@@ -132,6 +136,9 @@ l'infobulle donne le jour liturgique ; un clic ouvre le panneau de lecture.
 | `Tab` / `Maj + Tab` | office suivant / précédent |
 | `1` à `8` | aller directement à un office |
 | `↑` `↓` (ou `j` `k`), `Espace` | faire défiler le texte |
+| `p` / `s` | jour précédent / suivant |
+| `a` | revenir à aujourd'hui |
+| `d` | taper une date (`Entrée` valide, `Échap` annule) |
 | `m` | messe suivante (jours à plusieurs messes) |
 | `r` | recharger |
 | `Échap` | fermer |
@@ -153,7 +160,8 @@ Le panneau suit le thème Omarchy : police, arrondis, couleurs et états
 couleur liturgique du jour.
 
 Ouverture depuis un raccourci : `omarchy-shell shell toggle vianney.aelf`, ou
-`omarchy-shell vianney.aelf open laudes` pour un office précis.
+`omarchy-shell vianney.aelf open laudes` pour un office précis, et
+`omarchy-shell vianney.aelf date 25/12` pour une date.
 
 Les textes liturgiques restent la propriété de l'AELF : l'API est gratuite pour
 un usage non commercial, rien n'est enregistré ni redistribué ici.
